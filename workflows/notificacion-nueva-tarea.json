@@ -1,0 +1,195 @@
+{
+  "name": "Notificación Nueva Tarea",
+  "nodes": [
+    {
+      "parameters": {
+        "httpMethod": "POST",
+        "path": "webhook-nueva-tarea",
+        "responseMode": "responseNode",
+        "options": {}
+      },
+      "id": "webhook-nueva-tarea",
+      "name": "Webhook Nueva Tarea",
+      "type": "n8n-nodes-base.webhook",
+      "typeVersion": 1,
+      "position": [250, 300],
+      "webhookId": "auto-generate"
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "leftValue": "",
+            "typeValidation": "strict"
+          },
+          "conditions": [
+            {
+              "id": "validar-datos",
+              "leftValue": "={{ $json.body }}",
+              "rightValue": "",
+              "operator": {
+                "type": "object",
+                "operation": "notEmpty"
+              }
+            }
+          ],
+          "combinator": "and"
+        },
+        "options": {}
+      },
+      "id": "validar-webhook",
+      "name": "Validar Datos",
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 1,
+      "position": [450, 300]
+    },
+    {
+      "parameters": {
+        "channel": "email",
+        "subject": "Nueva Tarea Creada - Agenda de Obras",
+        "emailType": "html",
+        "message": "=<!DOCTYPE html>\n<html>\n<head>\n<style>\n  body { font-family: Arial, sans-serif; }\n  .container { max-width: 600px; margin: 0 auto; padding: 20px; }\n  .header { background: #667eea; color: white; padding: 20px; text-align: center; }\n  .content { padding: 20px; background: #f9f9f9; }\n  .task-info { margin: 10px 0; }\n  .priority-high { color: #dc3545; }\n  .priority-medium { color: #ffc107; }\n  .priority-low { color: #28a745; }\n</style>\n</head>\n<body>\n  <div class=\"container\">\n    <div class=\"header\">\n      <h1>🏗️ Nueva Tarea Creada</h1>\n    </div>\n    <div class=\"content\">\n      <h2>{{ $json.body.title }}</h2>\n      <div class=\"task-info\"><strong>Proyecto:</strong> {{ $json.body.projectName }}</div>\n      <div class=\"task-info\"><strong>Asignado a:</strong> {{ $json.body.assigneeName }}</div>\n      <div class=\"task-info\"><strong>Prioridad:</strong> <span class=\"priority-{{ $json.body.priority }}\">{{ $json.body.priority }}</span></div>\n      <div class=\"task-info\"><strong>Fecha límite:</strong> {{ $json.body.deadline }}</div>\n      <div class=\"task-info\"><strong>Descripción:</strong> {{ $json.body.description }}</div>\n      <p><a href=\"http://192.168.0.244:8000\" style=\"background: #667eea; color: white; padding: 10px 20px; text-decoration: none; border-radius: 5px;\">Ver en Agenda</a></p>\n    </div>\n  </div>\n</body>\n</html>",
+        "toEmail": "tu-email@ejemplo.com",
+        "options": {}
+      },
+      "id": "enviar-email",
+      "name": "Enviar Email",
+      "type": "n8n-nodes-base.emailSend",
+      "typeVersion": 1,
+      "position": [650, 200],
+      "credentials": {
+        "smtp": {
+          "id": "smtp-credentials",
+          "name": "SMTP Credenciales"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "channel": "slack",
+        "text": "=🏗️ *Nueva Tarea Creada*\n\n*Título:* {{ $json.body.title }}\n*Proyecto:* {{ $json.body.projectName }}\n*Asignado a:* {{ $json.body.assigneeName }}\n*Prioridad:* {{ $json.body.priority }}\n*Fecha límite:* {{ $json.body.deadline }}\n\n*Descripción:* {{ $json.body.description }}",
+        "channelId": "#agenda-obras",
+        "options": {}
+      },
+      "id": "enviar-slack",
+      "name": "Enviar Slack",
+      "type": "n8n-nodes-base.slack",
+      "typeVersion": 1,
+      "position": [650, 400],
+      "credentials": {
+        "slackApi": {
+          "id": "slack-credentials",
+          "name": "Slack API"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "operation": "append",
+        "documentId": {
+          "__rl": true,
+          "mode": "url",
+          "value": "https://docs.google.com/spreadsheets/d/TU_ID_HOJA"
+        },
+        "sheetName": "Tareas",
+        "columns": {
+          "mappingMode": "autoMapInputData"
+        },
+        "options": {}
+      },
+      "id": "guardar-sheets",
+      "name": "Guardar en Google Sheets",
+      "type": "n8n-nodes-base.googleSheets",
+      "typeVersion": 4,
+      "position": [850, 300],
+      "credentials": {
+        "googleSheetsOAuth2Api": {
+          "id": "google-sheets-credentials",
+          "name": "Google Sheets"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "respondWith": "json",
+        "responseBody": "={{ {\"success\": true, \"message\": \"Tarea procesada correctamente\", \"taskId\": $json.body.id} }}"
+      },
+      "id": "respuesta-webhook",
+      "name": "Respuesta Webhook",
+      "type": "n8n-nodes-base.respondToWebhook",
+      "typeVersion": 1,
+      "position": [1050, 300]
+    }
+  ],
+  "connections": {
+    "Webhook Nueva Tarea": {
+      "main": [
+        [
+          {
+            "node": "Validar Datos",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Validar Datos": {
+      "main": [
+        [
+          {
+            "node": "Enviar Email",
+            "type": "main",
+            "index": 0
+          },
+          {
+            "node": "Enviar Slack",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Enviar Email": {
+      "main": [
+        [
+          {
+            "node": "Guardar en Google Sheets",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Enviar Slack": {
+      "main": [
+        [
+          {
+            "node": "Guardar en Google Sheets",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Guardar en Google Sheets": {
+      "main": [
+        [
+          {
+            "node": "Respuesta Webhook",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "settings": {
+    "executionOrder": "v1"
+  },
+  "staticData": null,
+  "tags": [],
+  "triggerCount": 1,
+  "updatedAt": "2026-08-27T00:00:00.000Z",
+  "versionId": "1"
+}

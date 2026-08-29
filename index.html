@@ -1,0 +1,467 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="theme-color" content="#667eea">
+    <meta name="description" content="Sistema de gestión profesional para proyectos de construcción">
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+    <meta name="apple-mobile-web-app-title" content="Obras">
+    <title>Agenda Profesional de Obras</title>
+    <link rel="stylesheet" href="styles.css">
+    <link rel="manifest" href="manifest.json">
+    <link rel="apple-touch-icon" href="icon-192.png">
+</head>
+<body>
+    <div class="container">
+        <header>
+            <h1>🏗️ Agenda Profesional de Obras</h1>
+            <p class="subtitle">Sistema de gestión integral para proyectos de construcción</p>
+        </header>
+
+        <nav class="main-nav">
+            <button class="nav-btn active" data-section="dashboard">📊 Dashboard</button>
+            <button class="nav-btn" data-section="projects">🏢 Proyectos</button>
+            <button class="nav-btn" data-section="tasks">✅ Tareas</button>
+            <button class="nav-btn" data-section="personnel">👷 Personal</button>
+            <button class="nav-btn" data-section="materials">🧱 Materiales</button>
+            <button class="nav-btn" data-section="reports">📈 Reportes</button>
+            <button class="nav-btn" data-section="qr-installer">📱 Instalador Móvil</button>
+        </nav>
+
+        <main>
+            <!-- Dashboard Section -->
+            <section id="dashboard" class="section active">
+                <h2>Dashboard General</h2>
+                <div class="stats-grid">
+                    <div class="stat-card">
+                        <div class="stat-icon">🏢</div>
+                        <div class="stat-info">
+                            <h3>Proyectos Activos</h3>
+                            <p class="stat-number" id="active-projects">0</p>
+                        </div>
+                    </div>
+                    <div class="stat-card">
+                        <div class="stat-icon">✅</div>
+                        <div class="stat-info">
+                            <h3>Tareas Pendientes</h3>
+                            <p class="stat-number" id="pending-tasks">0</p>
+                        </div>
+                    </div>
+                    <div class="stat-card">
+                        <div class="stat-icon">👷</div>
+                        <div class="stat-info">
+                            <h3>Personal Activo</h3>
+                            <p class="stat-number" id="active-personnel">0</p>
+                        </div>
+                    </div>
+                    <div class="stat-card">
+                        <div class="stat-icon">🧱</div>
+                        <div class="stat-info">
+                            <h3>Materiales</h3>
+                            <p class="stat-number" id="total-materials">0</p>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="recent-activity">
+                    <h3>Actividad Reciente</h3>
+                    <div id="recent-activity-list" class="activity-list">
+                        <p class="no-data">No hay actividad reciente</p>
+                    </div>
+                </div>
+            </section>
+
+            <!-- Projects Section -->
+            <section id="projects" class="section">
+                <div class="section-header">
+                    <h2>Gestión de Proyectos</h2>
+                    <button class="btn btn-primary" onclick="openModal('project-modal')">+ Nuevo Proyecto</button>
+                </div>
+                <div id="projects-list" class="cards-grid">
+                    <p class="no-data">No hay proyectos registrados</p>
+                </div>
+            </section>
+
+            <!-- Tasks Section -->
+            <section id="tasks" class="section">
+                <div class="section-header">
+                    <h2>Gestión de Tareas</h2>
+                    <button class="btn btn-primary" onclick="openModal('task-modal')">+ Nueva Tarea</button>
+                </div>
+                <div class="filters">
+                    <select id="task-filter" onchange="filterTasks()">
+                        <option value="all">Todas las tareas</option>
+                        <option value="pending">Pendientes</option>
+                        <option value="in-progress">En Progreso</option>
+                        <option value="completed">Completadas</option>
+                    </select>
+                </div>
+                <div id="tasks-list" class="task-list">
+                    <p class="no-data">No hay tareas registradas</p>
+                </div>
+            </section>
+
+            <!-- Personnel Section -->
+            <section id="personnel" class="section">
+                <div class="section-header">
+                    <h2>Gestión de Personal</h2>
+                    <button class="btn btn-primary" onclick="openModal('personnel-modal')">+ Nuevo Personal</button>
+                </div>
+                <div id="personnel-list" class="cards-grid">
+                    <p class="no-data">No hay personal registrado</p>
+                </div>
+            </section>
+
+            <!-- Materials Section -->
+            <section id="materials" class="section">
+                <div class="section-header">
+                    <h2>Control de Materiales</h2>
+                    <button class="btn btn-primary" onclick="openModal('material-modal')">+ Nuevo Material</button>
+                </div>
+                <div id="materials-list" class="materials-table">
+                    <p class="no-data">No hay materiales registrados</p>
+                </div>
+            </section>
+
+            <!-- Reports Section -->
+            <section id="reports" class="section">
+                <div class="section-header">
+                    <h2>Reportes y Estadísticas</h2>
+                    <div class="data-actions">
+                        <button class="btn btn-primary" onclick="exportData()">📤 Exportar JSON</button>
+                        <button class="btn btn-secondary" onclick="document.getElementById('import-file').click()">📥 Importar JSON</button>
+                        <input type="file" id="import-file" accept=".json" style="display: none;" onchange="importData(event)">
+                    </div>
+                </div>
+                <div class="reports-grid">
+                    <div class="report-card">
+                        <h3>Resumen de Proyectos</h3>
+                        <div id="project-summary" class="report-content">
+                            <p class="no-data">No hay datos para mostrar</p>
+                        </div>
+                    </div>
+                    <div class="report-card">
+                        <h3>Estado de Tareas</h3>
+                        <div id="task-summary" class="report-content">
+                            <p class="no-data">No hay datos para mostrar</p>
+                        </div>
+                    </div>
+                    <div class="report-card">
+                        <h3>Costos de Materiales</h3>
+                        <div id="material-costs" class="report-content">
+                            <p class="no-data">No hay datos para mostrar</p>
+                        </div>
+                    </div>
+                </div>
+            </section>
+
+            <!-- QR Installer Section -->
+            <section id="qr-installer" class="section">
+                <h2>📱 Instalador Móvil por QR</h2>
+                <p class="subtitle">Escanea el código QR para instalar la app en tu móvil</p>
+                
+                <div class="qr-installer-container">
+                    <div class="qr-input-section">
+                        <div class="form-group">
+                            <label>URL de la aplicación:</label>
+                            <input type="url" id="qr-url-input" placeholder="https://tu-sitio.com" value="http://192.168.0.244:8000">
+                        </div>
+                        <div class="qr-buttons">
+                            <button class="btn btn-primary" onclick="generateQR()">🔄 Generar QR</button>
+                            <button class="btn btn-secondary" onclick="detectCurrentURL()">🔍 Detectar URL Actual</button>
+                            <button class="btn btn-secondary" onclick="testLocalIP()">🧪 Probar IP Local</button>
+                        </div>
+                    </div>
+
+                    <div class="qr-display-section">
+                        <div class="loading" id="qr-loading">
+                            <div class="spinner"></div>
+                            <p>Generando QR...</p>
+                        </div>
+
+                        <div class="error" id="qr-error"></div>
+
+                        <div class="qr-image-container" id="qr-image-container">
+                            <img id="qr-image" class="qr-image" alt="QR Code" src="">
+                            <div class="qr-actions">
+                                <button class="btn btn-primary" onclick="downloadQR()">📥 Descargar QR</button>
+                                <button class="btn btn-secondary" onclick="printQR()">🖨️ Imprimir QR</button>
+                            </div>
+                        </div>
+
+                        <div class="success" id="qr-success">
+                            ✅ QR generado correctamente. Escanea con tu móvil.
+                        </div>
+                    </div>
+
+                    <div class="qr-instructions">
+                        <h3>📋 Instrucciones para instalar:</h3>
+                        <ol>
+                            <li>Genera el QR con la URL de tu aplicación</li>
+                            <li>Abre la cámara de tu móvil</li>
+                            <li>Escanea el código QR</li>
+                            <li>Se abrirá la aplicación en el navegador</li>
+                            <li><strong>Android:</strong> Toca "Agregar a pantalla de inicio"</li>
+                            <li><strong>iOS:</strong> Toca "Compartir" > "Agregar a pantalla de inicio"</li>
+                            <li>¡La app se instalará como nativa!</li>
+                        </ol>
+                    </div>
+
+                    <div class="url-examples">
+                        <h4>🌐 Ejemplos de URLs después del despliegue:</h4>
+                        <p><strong>GitHub Pages:</strong> <code>https://usuario.github.io/agenda-obras</code></p>
+                        <p><strong>Netlify:</strong> <code>https://nombre-random.netlify.app</code></p>
+                        <p><strong>Vercel:</strong> <code>https://proyecto.vercel.app</code></p>
+                        <p><strong>Local:</strong> <code>http://192.168.1.X:8000</code></p>
+                    </div>
+                </div>
+            </section>
+        </main>
+    </div>
+
+    <!-- Modals -->
+    <div id="project-modal" class="modal">
+        <div class="modal-content">
+            <span class="close" onclick="closeModal('project-modal')">&times;</span>
+            <h2 id="project-modal-title">Nuevo Proyecto</h2>
+            <form id="project-form" onsubmit="saveProject(event)">
+                <input type="hidden" id="project-id">
+                <div class="form-group">
+                    <label>Nombre del Proyecto:</label>
+                    <input type="text" id="project-name" required>
+                </div>
+                <div class="form-group">
+                    <label>Cliente:</label>
+                    <input type="text" id="project-client" required>
+                </div>
+                <div class="form-group">
+                    <label>Ubicación:</label>
+                    <input type="text" id="project-location" required>
+                </div>
+                <div class="form-group">
+                    <label>Fecha Inicio:</label>
+                    <input type="date" id="project-start-date" required>
+                </div>
+                <div class="form-group">
+                    <label>Fecha Fin Estimada:</label>
+                    <input type="date" id="project-end-date" required>
+                </div>
+                <div class="form-group">
+                    <label>Presupuesto ($):</label>
+                    <input type="number" id="project-budget" required>
+                </div>
+                <div class="form-group">
+                    <label>Estado:</label>
+                    <select id="project-status" required>
+                        <option value="planning">Planificación</option>
+                        <option value="in-progress">En Progreso</option>
+                        <option value="completed">Completado</option>
+                        <option value="on-hold">En Espera</option>
+                    </select>
+                </div>
+                <div class="form-group">
+                    <label>Descripción:</label>
+                    <textarea id="project-description" rows="3"></textarea>
+                </div>
+                <button type="submit" class="btn btn-primary">Guardar Proyecto</button>
+            </form>
+        </div>
+    </div>
+
+    <div id="task-modal" class="modal">
+        <div class="modal-content">
+            <span class="close" onclick="closeModal('task-modal')">&times;</span>
+            <h2 id="task-modal-title">Nueva Tarea</h2>
+            <form id="task-form" onsubmit="saveTask(event)">
+                <input type="hidden" id="task-id">
+                <div class="form-group">
+                    <label>Título de la Tarea:</label>
+                    <input type="text" id="task-title" required>
+                </div>
+                <div class="form-group">
+                    <label>Proyecto:</label>
+                    <select id="task-project" required>
+                        <option value="">Seleccionar proyecto</option>
+                    </select>
+                </div>
+                <div class="form-group">
+                    <label>Asignado a:</label>
+                    <select id="task-assignee">
+                        <option value="">Sin asignar</option>
+                    </select>
+                </div>
+                <div class="form-group">
+                    <label>Prioridad:</label>
+                    <select id="task-priority" required>
+                        <option value="low">Baja</option>
+                        <option value="medium">Media</option>
+                        <option value="high">Alta</option>
+                        <option value="urgent">Urgente</option>
+                    </select>
+                </div>
+                <div class="form-group">
+                    <label>Fecha Límite:</label>
+                    <input type="date" id="task-deadline" required>
+                </div>
+                <div class="form-group">
+                    <label>Estado:</label>
+                    <select id="task-status" required>
+                        <option value="pending">Pendiente</option>
+                        <option value="in-progress">En Progreso</option>
+                        <option value="completed">Completada</option>
+                    </select>
+                </div>
+                <div class="form-group">
+                    <label>Descripción:</label>
+                    <textarea id="task-description" rows="3"></textarea>
+                </div>
+                <button type="submit" class="btn btn-primary">Guardar Tarea</button>
+            </form>
+        </div>
+    </div>
+
+    <div id="personnel-modal" class="modal">
+        <div class="modal-content">
+            <span class="close" onclick="closeModal('personnel-modal')">&times;</span>
+            <h2 id="personnel-modal-title">Nuevo Personal</h2>
+            <form id="personnel-form" onsubmit="savePersonnel(event)">
+                <input type="hidden" id="personnel-id">
+                <div class="form-group">
+                    <label>Nombre Completo:</label>
+                    <input type="text" id="personnel-name" required>
+                </div>
+                <div class="form-group">
+                    <label>Cargo/Puesto:</label>
+                    <input type="text" id="personnel-role" required>
+                </div>
+                <div class="form-group">
+                    <label>Teléfono:</label>
+                    <input type="tel" id="personnel-phone">
+                </div>
+                <div class="form-group">
+                    <label>Email:</label>
+                    <input type="email" id="personnel-email">
+                </div>
+                <div class="form-group">
+                    <label>Especialidad:</label>
+                    <input type="text" id="personnel-specialty">
+                </div>
+                <div class="form-group">
+                    <label>Salario Diario ($):</label>
+                    <input type="number" id="personnel-salary" required>
+                </div>
+                <div class="form-group">
+                    <label>Estado:</label>
+                    <select id="personnel-status" required>
+                        <option value="active">Activo</option>
+                        <option value="inactive">Inactivo</option>
+                    </select>
+                </div>
+                <button type="submit" class="btn btn-primary">Guardar Personal</button>
+            </form>
+        </div>
+    </div>
+
+    <div id="material-modal" class="modal">
+        <div class="modal-content">
+            <span class="close" onclick="closeModal('material-modal')">&times;</span>
+            <h2 id="material-modal-title">Nuevo Material</h2>
+            <form id="material-form" onsubmit="saveMaterial(event)">
+                <input type="hidden" id="material-id">
+                <div class="form-group">
+                    <label>Nombre del Material:</label>
+                    <input type="text" id="material-name" required>
+                </div>
+                <div class="form-group">
+                    <label>Categoría:</label>
+                    <select id="material-category" required>
+                        <option value="cemento">Cemento</option>
+                        <option value="acero">Acero</option>
+                        <option value="madera">Madera</option>
+                        <option value="ceramicos">Cerámicos</option>
+                        <option value="pinturas">Pinturas</option>
+                        <option value="electricos">Eléctricos</option>
+                        <option value="fontanería">Fontanería</option>
+                        <option value="otros">Otros</option>
+                    </select>
+                </div>
+                <div class="form-group">
+                    <label>Cantidad:</label>
+                    <input type="number" id="material-quantity" required>
+                </div>
+                <div class="form-group">
+                    <label>Unidad:</label>
+                    <select id="material-unit" required>
+                        <option value="kg">Kilogramos</option>
+                        <option value="units">Unidades</option>
+                        <option value="m2">Metros Cuadrados</option>
+                        <option value="m3">Metros Cúbicos</option>
+                        <option value="liters">Litros</option>
+                        <option value="bags">Sacos</option>
+                    </select>
+                </div>
+                <div class="form-group">
+                    <label>Precio Unitario ($):</label>
+                    <input type="number" id="material-price" required>
+                </div>
+                <div class="form-group">
+                    <label>Proveedor:</label>
+                    <input type="text" id="material-supplier">
+                </div>
+                <div class="form-group">
+                    <label>Proyecto Asignado:</label>
+                    <select id="material-project">
+                        <option value="">Sin asignar</option>
+                    </select>
+                </div>
+                <button type="submit" class="btn btn-primary">Guardar Material</button>
+            </form>
+        </div>
+    </div>
+
+    <script src="script.js"></script>
+    <script>
+        // Service Worker Registration
+        if ('serviceWorker' in navigator) {
+            window.addEventListener('load', () => {
+                navigator.serviceWorker.register('./sw.js')
+                    .then(registration => {
+                        console.log('Service Worker registrado con éxito:', registration.scope);
+                    })
+                    .catch(error => {
+                        console.log('Error al registrar Service Worker:', error);
+                    });
+            });
+        }
+
+        // PWA Install Prompt
+        let deferredPrompt;
+        window.addEventListener('beforeinstallprompt', (e) => {
+            e.preventDefault();
+            deferredPrompt = e;
+            
+            // Mostrar botón de instalación (opcional)
+            const installBtn = document.createElement('button');
+            installBtn.textContent = '📲 Instalar App';
+            installBtn.className = 'btn btn-primary';
+            installBtn.style.position = 'fixed';
+            installBtn.style.bottom = '20px';
+            installBtn.style.right = '20px';
+            installBtn.style.zIndex = '1000';
+            installBtn.onclick = () => {
+                deferredPrompt.prompt();
+                deferredPrompt.userChoice.then((choiceResult) => {
+                    if (choiceResult.outcome === 'accepted') {
+                        console.log('Usuario aceptó la instalación');
+                    }
+                    deferredPrompt = null;
+                    installBtn.remove();
+                });
+            };
+            document.body.appendChild(installBtn);
+        });
+    </script>
+</body>
+</html>

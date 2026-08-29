@@ -1,0 +1,6 @@
+{
+  "localIP": "192.168.0.244",
+  "port": "8000",
+  "localURL": "http://192.168.0.244:8000",
+  "notes": "IP fija configurada por el usuario para acceso local desde móvil"
+}

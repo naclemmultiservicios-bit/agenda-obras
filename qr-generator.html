@@ -1,0 +1,365 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Generador QR - Agenda de Obras</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            padding: 20px;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+        }
+
+        .container {
+            background: white;
+            border-radius: 20px;
+            padding: 40px;
+            max-width: 500px;
+            width: 100%;
+            box-shadow: 0 20px 60px rgba(0, 0, 0, 0.3);
+            text-align: center;
+        }
+
+        h1 {
+            color: #667eea;
+            margin-bottom: 10px;
+            font-size: 2em;
+        }
+
+        .subtitle {
+            color: #6c757d;
+            margin-bottom: 30px;
+            font-size: 1.1em;
+        }
+
+        .input-group {
+            margin-bottom: 20px;
+        }
+
+        .input-group label {
+            display: block;
+            margin-bottom: 8px;
+            font-weight: 600;
+            color: #333;
+            text-align: left;
+        }
+
+        .input-group input {
+            width: 100%;
+            padding: 15px;
+            border: 2px solid #e9ecef;
+            border-radius: 10px;
+            font-size: 1em;
+            transition: border-color 0.3s ease;
+        }
+
+        .input-group input:focus {
+            outline: none;
+            border-color: #667eea;
+        }
+
+        .btn {
+            background: #667eea;
+            color: white;
+            border: none;
+            padding: 15px 30px;
+            border-radius: 10px;
+            cursor: pointer;
+            font-size: 1.1em;
+            font-weight: 600;
+            transition: all 0.3s ease;
+            margin: 10px 5px;
+        }
+
+        .btn:hover {
+            background: #5568d3;
+            transform: translateY(-2px);
+        }
+
+        .btn-secondary {
+            background: #6c757d;
+        }
+
+        .btn-secondary:hover {
+            background: #5a6268;
+        }
+
+        .qr-container {
+            margin: 30px 0;
+            padding: 20px;
+            background: #f8f9fa;
+            border-radius: 15px;
+            display: none;
+        }
+
+        .qr-container.active {
+            display: block;
+        }
+
+        .qr-image {
+            max-width: 300px;
+            margin: 0 auto;
+            display: block;
+            border: 5px solid white;
+            border-radius: 10px;
+            box-shadow: 0 4px 15px rgba(0, 0, 0, 0.1);
+        }
+
+        .instructions {
+            background: #e7f3ff;
+            padding: 20px;
+            border-radius: 10px;
+            margin: 20px 0;
+            text-align: left;
+        }
+
+        .instructions h3 {
+            color: #667eea;
+            margin-bottom: 15px;
+        }
+
+        .instructions ol {
+            margin-left: 20px;
+            color: #333;
+        }
+
+        .instructions li {
+            margin-bottom: 10px;
+        }
+
+        .url-examples {
+            background: #f8f9fa;
+            padding: 15px;
+            border-radius: 10px;
+            margin: 20px 0;
+            text-align: left;
+        }
+
+        .url-examples h4 {
+            color: #333;
+            margin-bottom: 10px;
+        }
+
+        .url-examples p {
+            color: #6c757d;
+            font-size: 0.9em;
+            margin-bottom: 5px;
+        }
+
+        .url-examples code {
+            background: #e9ecef;
+            padding: 2px 6px;
+            border-radius: 3px;
+            font-family: monospace;
+        }
+
+        .error {
+            background: #f8d7da;
+            color: #721c24;
+            padding: 15px;
+            border-radius: 10px;
+            margin: 20px 0;
+            display: none;
+        }
+
+        .error.active {
+            display: block;
+        }
+
+        .loading {
+            display: none;
+            margin: 20px 0;
+        }
+
+        .loading.active {
+            display: block;
+        }
+
+        .spinner {
+            border: 4px solid #f3f3f3;
+            border-top: 4px solid #667eea;
+            border-radius: 50%;
+            width: 40px;
+            height: 40px;
+            animation: spin 1s linear infinite;
+            margin: 0 auto;
+        }
+
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+
+        .success {
+            background: #d4edda;
+            color: #155724;
+            padding: 15px;
+            border-radius: 10px;
+            margin: 20px 0;
+            display: none;
+        }
+
+        .success.active {
+            display: block;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>📱 Generador QR</h1>
+        <p class="subtitle">Escanea para instalar la Agenda de Obras en tu móvil</p>
+
+        <div class="input-group">
+            <label for="url-input">URL de la aplicación:</label>
+            <input type="url" id="url-input" placeholder="https://tu-sitio.com" value="file:///C:/Users/USER/OneDrive/Escritorio/agenda/index.html">
+        </div>
+
+        <button class="btn" onclick="generateQR()">🔄 Generar QR</button>
+        <button class="btn btn-secondary" onclick="testLocal()">🧪 Probar Local</button>
+
+        <div class="loading" id="loading">
+            <div class="spinner"></div>
+            <p>Generando QR...</p>
+        </div>
+
+        <div class="error" id="error"></div>
+
+        <div class="qr-container" id="qr-container">
+            <img id="qr-image" class="qr-image" alt="QR Code" src="">
+            <div style="margin-top: 20px;">
+                <button class="btn" onclick="downloadQR()">📥 Descargar QR</button>
+                <button class="btn btn-secondary" onclick="printQR()">🖨️ Imprimir QR</button>
+            </div>
+        </div>
+
+        <div class="success" id="success">
+            ✅ QR generado correctamente. Escanea con tu móvil.
+        </div>
+
+        <div class="instructions">
+            <h3>📋 Instrucciones para instalar:</h3>
+            <ol>
+                <li>Genera el QR con tu URL de despliegue</li>
+                <li>Abre la cámara de tu móvil</li>
+                <li>Escanea el código QR</li>
+                <li>Se abrirá la aplicación en el navegador</li>
+                <li><strong>Android:</strong> Toca "Agregar a pantalla de inicio"</li>
+                <li><strong>iOS:</strong> Toca "Compartir" > "Agregar a pantalla de inicio"</li>
+                <li>¡La app se instalará como nativa!</li>
+            </ol>
+        </div>
+
+        <div class="url-examples">
+            <h4>🌐 Ejemplos de URLs después del despliegue:</h4>
+            <p><strong>GitHub Pages:</strong> <code>https://usuario.github.io/agenda-obras</code></p>
+            <p><strong>Netlify:</strong> <code>https://nombre-random.netlify.app</code></p>
+            <p><strong>Vercel:</strong> <code>https://proyecto.vercel.app</code></p>
+        </div>
+    </div>
+
+    <script>
+        function generateQR() {
+            const url = document.getElementById('url-input').value.trim();
+            const qrContainer = document.getElementById('qr-container');
+            const loading = document.getElementById('loading');
+            const error = document.getElementById('error');
+            const success = document.getElementById('success');
+            const qrImage = document.getElementById('qr-image');
+
+            // Reset estados
+            qrContainer.classList.remove('active');
+            error.classList.remove('active');
+            success.classList.remove('active');
+            loading.classList.add('active');
+
+            if (!url) {
+                loading.classList.remove('active');
+                error.textContent = '❌ Por favor ingresa una URL válida';
+                error.classList.add('active');
+                return;
+            }
+
+            // Validar URL básica
+            try {
+                new URL(url);
+            } catch (e) {
+                loading.classList.remove('active');
+                error.textContent = '❌ URL inválida. Asegúrate de incluir http:// o https://';
+                error.classList.add('active');
+                return;
+            }
+
+            // Usar API gratuita para generar QR
+            const qrAPI = `https://api.qrserver.com/v1/create-qr-code/?size=300x300&data=${encodeURIComponent(url)}`;
+
+            const img = new Image();
+            img.onload = function() {
+                qrImage.src = qrAPI;
+                loading.classList.remove('active');
+                qrContainer.classList.add('active');
+                success.classList.add('active');
+            };
+
+            img.onerror = function() {
+                loading.classList.remove('active');
+                error.textContent = '❌ Error al generar el QR. Intenta nuevamente.';
+                error.classList.add('active');
+            };
+
+            img.src = qrAPI;
+        }
+
+        function testLocal() {
+            // Para pruebas locales, podemos usar la IP local
+            const input = document.getElementById('url-input');
+            input.value = 'http://192.168.1.100:8000'; // Ejemplo de IP local
+            alert('📍 Ingresa la IP de tu computadora en la red local.\n\nPara encontrar tu IP:\nWindows: ipconfig\nMac/Linux: ifconfig\n\nLuego ejecuta un servidor local como:\npython -m http.server 8000');
+        }
+
+        function downloadQR() {
+            const qrImage = document.getElementById('qr-image');
+            const link = document.createElement('a');
+            link.download = 'agenda-obras-qr.png';
+            link.href = qrImage.src;
+            link.click();
+        }
+
+        function printQR() {
+            const qrImage = document.getElementById('qr-image');
+            const printWindow = window.open('', '_blank');
+            printWindow.document.write(`
+                <html>
+                <head><title>Imprimir QR - Agenda de Obras</title></head>
+                <body style="text-align: center; padding: 20px;">
+                    <h1>Escanea para instalar Agenda de Obras</h1>
+                    <img src="${qrImage.src}" style="max-width: 400px; margin: 20px auto;">
+                    <p>Abre la cámara de tu móvil y escanea este código</p>
+                </body>
+                </html>
+            `);
+            printWindow.document.close();
+            printWindow.print();
+        }
+
+        // Generar QR automáticamente al cargar con la URL actual
+        window.onload = function() {
+            // Intentar obtener la URL actual si es HTTP/HTTPS
+            if (window.location.protocol === 'http:' || window.location.protocol === 'https:') {
+                document.getElementById('url-input').value = window.location.href;
+                generateQR();
+            }
+        };
+    </script>
+</body>
+</html>

@@ -1,0 +1,201 @@
+{
+  "name": "Exportación Automática a Oracle NoSQL",
+  "nodes": [
+    {
+      "parameters": {
+        "rule": {
+          "interval": [
+            {
+              "field": "hours",
+              "hoursInterval": 1
+            }
+          ]
+        }
+      },
+      "id": "trigger-cron",
+      "name": "Trigger Horario",
+      "type": "n8n-nodes-base.scheduleTrigger",
+      "typeVersion": 1,
+      "position": [250, 300]
+    },
+    {
+      "parameters": {
+        "url": "http://192.168.0.244:8000",
+        "options": {}
+      },
+      "id": "obtener-datos-app",
+      "name": "Obtener Datos App",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4,
+      "position": [450, 300]
+    },
+    {
+      "parameters": {
+        "operation": "executeQuery",
+        "query": "=SELECT * FROM agenda_obras.projects",
+        "options": {}
+      },
+      "id": "proyectos-postgres",
+      "name": "Obtener Proyectos PostgreSQL",
+      "type": "n8n-nodes-base.postgres",
+      "typeVersion": 2,
+      "position": [650, 200],
+      "credentials": {
+        "postgres": {
+          "id": "postgres-credentials",
+          "name": "PostgreSQL"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "operation": "executeQuery",
+        "query": "=SELECT * FROM agenda_obras.tasks",
+        "options": {}
+      },
+      "id": "tareas-postgres",
+      "name": "Obtener Tareas PostgreSQL",
+      "type": "n8n-nodes-base.postgres",
+      "typeVersion": 2,
+      "position": [650, 400],
+      "credentials": {
+        "postgres": {
+          "id": "postgres-credentials",
+          "name": "PostgreSQL"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "jsCode": "// Combinar todos los datos\nconst projects = $input.all()[0].json.projects || [];\nconst tasks = $input.all()[1].json.tasks || [];\nconst personnel = $input.all()[2].json.personnel || [];\nconst materials = $input.all()[3].json.materials || [];\n\nconst exportData = {\n  version: '1.0',\n  exportDate: new Date().toISOString(),\n  source: 'agenda-obras-app',\n  data: {\n    projects: projects,\n    tasks: tasks,\n    personnel: personnel,\n    materials: materials\n  }\n};\n\nreturn [{ json: exportData }];"
+      },
+      "id": "combinar-datos",
+      "name": "Combinar Datos",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 1,
+      "position": [850, 300]
+    },
+    {
+      "parameters": {
+        "operation": "upsert",
+        "collection": "agenda_obras_export",
+        "documentId": "={{ $json.exportDate }}",
+        "fields": "={{ $json }}",
+        "options": {}
+      },
+      "id": "oracle-nosql",
+      "name": "Guardar en Oracle NoSQL",
+      "type": "n8n-nodes-base.oracleNoSQL",
+      "typeVersion": 1,
+      "position": [1050, 300],
+      "credentials": {
+        "oracleNoSQL": {
+          "id": "oracle-nosql-credentials",
+          "name": "Oracle NoSQL"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "channel": "email",
+        "subject": "Exportación Completada - Agenda de Obras",
+        "emailType": "text",
+        "message": "=Exportación completada exitosamente a Oracle NoSQL\n\nFecha: {{ $json.exportDate }}\nProyectos: {{ $json.data.projects.length }}\nTareas: {{ $json.data.tasks.length }}\nPersonal: {{ $json.data.personnel.length }}\nMateriales: {{ $json.data.materials.length }}",
+        "toEmail": "tu-email@ejemplo.com",
+        "options": {}
+      },
+      "id": "notificacion-exportacion",
+      "name": "Notificación Exportación",
+      "type": "n8n-nodes-base.emailSend",
+      "typeVersion": 1,
+      "position": [1250, 300],
+      "credentials": {
+        "smtp": {
+          "id": "smtp-credentials",
+          "name": "SMTP Credenciales"
+        }
+      }
+    }
+  ],
+  "connections": {
+    "Trigger Horario": {
+      "main": [
+        [
+          {
+            "node": "Obtener Datos App",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Obtener Datos App": {
+      "main": [
+        [
+          {
+            "node": "Obtener Proyectos PostgreSQL",
+            "type": "main",
+            "index": 0
+          },
+          {
+            "node": "Obtener Tareas PostgreSQL",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Obtener Proyectos PostgreSQL": {
+      "main": [
+        [
+          {
+            "node": "Combinar Datos",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Obtener Tareas PostgreSQL": {
+      "main": [
+        [
+          {
+            "node": "Combinar Datos",
+            "type": "main",
+            "index": 1
+          }
+        ]
+      ]
+    },
+    "Combinar Datos": {
+      "main": [
+        [
+          {
+            "node": "Guardar en Oracle NoSQL",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Guardar en Oracle NoSQL": {
+      "main": [
+        [
+          {
+            "node": "Notificación Exportación",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "settings": {
+    "executionOrder": "v1"
+  },
+  "staticData": null,
+  "tags": ["exportación", "oracle-nosql"],
+  "triggerCount": 1,
+  "updatedAt": "2026-08-27T00:00:00.000Z",
+  "versionId": "1"
+}

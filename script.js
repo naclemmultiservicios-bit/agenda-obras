@@ -872,6 +872,7 @@ function generateQR() {
         return;
     }
 
+    // Si es URL pública, generar QR sin advertencias
     generateQRInternal(url);
 }
 

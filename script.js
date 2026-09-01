@@ -752,7 +752,7 @@ function getCategoryLabel(category) {
 
 // n8n Webhook Integration
 function triggerN8nWebhook(eventType, data) {
-    const n8nWebhookURL = 'http://192.168.0.244:5678/webhook/agenda-obras';
+    const n8nWebhookURL = 'http://localhost:5678/webhook/agenda-obras';
     
     const payload = {
         eventType: eventType,
@@ -775,6 +775,39 @@ function triggerN8nWebhook(eventType, data) {
     })
     .catch(error => {
         console.error('Error de conexión con n8n:', error);
+    });
+}
+
+// Sincronizar todos los datos con n8n
+function syncAllDataToN8n() {
+    const n8nWebhookURL = 'http://localhost:5678/webhook/agenda-obras';
+    
+    const payload = {
+        eventType: 'full_sync',
+        timestamp: new Date().toISOString(),
+        data: data,
+        source: 'agenda-obras-app'
+    };
+
+    fetch(n8nWebhookURL, {
+        method: 'POST',
+        headers: {
+            'Content-Type': 'application/json',
+        },
+        body: JSON.stringify(payload)
+    })
+    .then(response => {
+        if (response.ok) {
+            addActivityLog('Datos sincronizados con n8n correctamente');
+            alert('✅ Datos sincronizados con PostgreSQL correctamente');
+        } else {
+            console.error('Error al sincronizar con n8n:', response.statusText);
+            alert('❌ Error al sincronizar datos con n8n');
+        }
+    })
+    .catch(error => {
+        console.error('Error de conexión con n8n:', error);
+        alert('❌ Error de conexión con n8n. Verifica que n8n esté funcionando.');
     });
 }
 

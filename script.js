@@ -1,3 +1,7 @@
+// Supabase Configuration
+const SUPABASE_URL = 'https://kgwknwfhnxmptjgpbjwy.supabase.co';
+const SUPABASE_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Imtnd2tud2ZobnhtcHRqZ3Biand5Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODg3OTA3MTYsImV4cCI6MjEwNDM2NjcxNn0.5_zOBdgQ4aVhZtNQUh_sYiFWCMiwzgWGvFmTXOWZHEU';
+
 // Data Management
 let data = {
     projects: [],
@@ -7,19 +11,196 @@ let data = {
     activityLog: []
 };
 
-// Load data from localStorage
-function loadData() {
-    const savedData = localStorage.getItem('constructionAgenda');
-    if (savedData) {
-        data = JSON.parse(savedData);
+// Load data from Supabase
+async function loadData() {
+    try {
+        // Cargar proyectos
+        const projectsResponse = await fetch(`${SUPABASE_URL}/rest/v1/projects`, {
+            headers: {
+                'apikey': SUPABASE_KEY,
+                'Authorization': `Bearer ${SUPABASE_KEY}`
+            }
+        });
+        data.projects = await projectsResponse.json();
+
+        // Cargar tareas
+        const tasksResponse = await fetch(`${SUPABASE_URL}/rest/v1/tasks`, {
+            headers: {
+                'apikey': SUPABASE_KEY,
+                'Authorization': `Bearer ${SUPABASE_KEY}`
+            }
+        });
+        data.tasks = await tasksResponse.json();
+
+        // Cargar personal
+        const personnelResponse = await fetch(`${SUPABASE_URL}/rest/v1/personnel`, {
+            headers: {
+                'apikey': SUPABASE_KEY,
+                'Authorization': `Bearer ${SUPABASE_KEY}`
+            }
+        });
+        data.personnel = await personnelResponse.json();
+
+        // Cargar materiales
+        const materialsResponse = await fetch(`${SUPABASE_URL}/rest/v1/materials`, {
+            headers: {
+                'apikey': SUPABASE_KEY,
+                'Authorization': `Bearer ${SUPABASE_KEY}`
+            }
+        });
+        data.materials = await materialsResponse.json();
+
+        // Cargar activity log
+        const activityLogResponse = await fetch(`${SUPABASE_URL}/rest/v1/activity_log`, {
+            headers: {
+                'apikey': SUPABASE_KEY,
+                'Authorization': `Bearer ${SUPABASE_KEY}`
+            }
+        });
+        data.activityLog = await activityLogResponse.json();
+
+        updateUI();
+    } catch (error) {
+        console.error('Error loading data from Supabase:', error);
+        // Fallback a localStorage si Supabase falla
+        const savedData = localStorage.getItem('constructionAgenda');
+        if (savedData) {
+            data = JSON.parse(savedData);
+        }
+        updateUI();
     }
-    updateUI();
 }
 
-// Save data to localStorage
-function saveData() {
-    localStorage.setItem('constructionAgenda', JSON.stringify(data));
-    updateUI();
+// Save data to Supabase
+async function saveData() {
+    try {
+        // Guardar en localStorage como backup
+        localStorage.setItem('constructionAgenda', JSON.stringify(data));
+        
+        // Guardar cada tipo de dato en Supabase
+        // Projects
+        for (const project of data.projects) {
+            const cleanProject = {
+                name: project.name,
+                client: project.client,
+                location: project.location,
+                start_date: project.startDate,
+                end_date: project.endDate,
+                budget: project.budget,
+                status: project.status,
+                description: project.description
+            };
+            
+            await fetch(`${SUPABASE_URL}/rest/v1/projects`, {
+                method: 'POST',
+                headers: {
+                    'apikey': SUPABASE_KEY,
+                    'Authorization': `Bearer ${SUPABASE_KEY}`,
+                    'Content-Type': 'application/json',
+                    'Prefer': 'return=representation'
+                },
+                body: JSON.stringify(cleanProject)
+            });
+        }
+
+        // Tasks
+        for (const task of data.tasks) {
+            const cleanTask = {
+                title: task.title,
+                project_id: task.projectId,
+                assignee_id: task.assigneeId,
+                priority: task.priority,
+                deadline: task.deadline,
+                status: task.status,
+                description: task.description
+            };
+            
+            await fetch(`${SUPABASE_URL}/rest/v1/tasks`, {
+                method: 'POST',
+                headers: {
+                    'apikey': SUPABASE_KEY,
+                    'Authorization': `Bearer ${SUPABASE_KEY}`,
+                    'Content-Type': 'application/json',
+                    'Prefer': 'return=representation'
+                },
+                body: JSON.stringify(cleanTask)
+            });
+        }
+
+        // Personnel
+        for (const person of data.personnel) {
+            const cleanPerson = {
+                name: person.name,
+                role: person.role,
+                phone: person.phone,
+                email: person.email,
+                specialty: person.specialty,
+                salary: person.salary,
+                status: person.status
+            };
+            
+            await fetch(`${SUPABASE_URL}/rest/v1/personnel`, {
+                method: 'POST',
+                headers: {
+                    'apikey': SUPABASE_KEY,
+                    'Authorization': `Bearer ${SUPABASE_KEY}`,
+                    'Content-Type': 'application/json',
+                    'Prefer': 'return=representation'
+                },
+                body: JSON.stringify(cleanPerson)
+            });
+        }
+
+        // Materials
+        for (const material of data.materials) {
+            const cleanMaterial = {
+                name: material.name,
+                category: material.category,
+                quantity: material.quantity,
+                unit: material.unit,
+                price: material.price,
+                supplier: material.supplier,
+                project_id: material.projectId
+            };
+            
+            await fetch(`${SUPABASE_URL}/rest/v1/materials`, {
+                method: 'POST',
+                headers: {
+                    'apikey': SUPABASE_KEY,
+                    'Authorization': `Bearer ${SUPABASE_KEY}`,
+                    'Content-Type': 'application/json',
+                    'Prefer': 'return=representation'
+                },
+                body: JSON.stringify(cleanMaterial)
+            });
+        }
+
+        // Activity Log
+        for (const log of data.activityLog) {
+            const cleanLog = {
+                message: log.message,
+                timestamp: log.timestamp
+            };
+            
+            await fetch(`${SUPABASE_URL}/rest/v1/activity_log`, {
+                method: 'POST',
+                headers: {
+                    'apikey': SUPABASE_KEY,
+                    'Authorization': `Bearer ${SUPABASE_KEY}`,
+                    'Content-Type': 'application/json',
+                    'Prefer': 'return=representation'
+                },
+                body: JSON.stringify(cleanLog)
+            });
+        }
+
+        updateUI();
+    } catch (error) {
+        console.error('Error saving data to Supabase:', error);
+        // Fallback a localStorage si Supabase falla
+        localStorage.setItem('constructionAgenda', JSON.stringify(data));
+        updateUI();
+    }
 }
 
 // Navigation

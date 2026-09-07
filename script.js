@@ -77,7 +77,7 @@ async function saveData() {
         // Guardar en localStorage como backup
         localStorage.setItem('constructionAgenda', JSON.stringify(data));
         
-        // Guardar cada tipo de dato en Supabase
+        // Guardar cada tipo de dato en Supabase (actualizar si existe, crear si no)
         // Projects
         for (const project of data.projects) {
             const cleanProject = {
@@ -91,16 +91,41 @@ async function saveData() {
                 description: project.description
             };
             
-            await fetch(`${SUPABASE_URL}/rest/v1/projects`, {
-                method: 'POST',
+            // Intentar actualizar primero (si existe proyecto con mismo nombre)
+            const existingProject = await fetch(`${SUPABASE_URL}/rest/v1/projects?name=eq.${encodeURIComponent(project.name)}&select=id`, {
                 headers: {
                     'apikey': SUPABASE_KEY,
-                    'Authorization': `Bearer ${SUPABASE_KEY}`,
-                    'Content-Type': 'application/json',
-                    'Prefer': 'return=representation'
-                },
-                body: JSON.stringify(cleanProject)
+                    'Authorization': `Bearer ${SUPABASE_KEY}`
+                }
             });
+            const existingProjects = await existingProject.json();
+            
+            if (existingProjects.length > 0) {
+                // Actualizar proyecto existente
+                const projectId = existingProjects[0].id;
+                await fetch(`${SUPABASE_URL}/rest/v1/projects?id=eq.${projectId}`, {
+                    method: 'PATCH',
+                    headers: {
+                        'apikey': SUPABASE_KEY,
+                        'Authorization': `Bearer ${SUPABASE_KEY}`,
+                        'Content-Type': 'application/json',
+                        'Prefer': 'return=representation'
+                    },
+                    body: JSON.stringify(cleanProject)
+                });
+            } else {
+                // Crear nuevo proyecto
+                await fetch(`${SUPABASE_URL}/rest/v1/projects`, {
+                    method: 'POST',
+                    headers: {
+                        'apikey': SUPABASE_KEY,
+                        'Authorization': `Bearer ${SUPABASE_KEY}`,
+                        'Content-Type': 'application/json',
+                        'Prefer': 'return=representation'
+                    },
+                    body: JSON.stringify(cleanProject)
+                });
+            }
         }
 
         // Tasks
@@ -115,16 +140,39 @@ async function saveData() {
                 description: task.description
             };
             
-            await fetch(`${SUPABASE_URL}/rest/v1/tasks`, {
-                method: 'POST',
+            // Verificar si existe tarea con mismo título
+            const existingTask = await fetch(`${SUPABASE_URL}/rest/v1/tasks?title=eq.${encodeURIComponent(task.title)}&select=id`, {
                 headers: {
                     'apikey': SUPABASE_KEY,
-                    'Authorization': `Bearer ${SUPABASE_KEY}`,
-                    'Content-Type': 'application/json',
-                    'Prefer': 'return=representation'
-                },
-                body: JSON.stringify(cleanTask)
+                    'Authorization': `Bearer ${SUPABASE_KEY}`
+                }
             });
+            const existingTasks = await existingTask.json();
+            
+            if (existingTasks.length > 0) {
+                const taskId = existingTasks[0].id;
+                await fetch(`${SUPABASE_URL}/rest/v1/tasks?id=eq.${taskId}`, {
+                    method: 'PATCH',
+                    headers: {
+                        'apikey': SUPABASE_KEY,
+                        'Authorization': `Bearer ${SUPABASE_KEY}`,
+                        'Content-Type': 'application/json',
+                        'Prefer': 'return=representation'
+                    },
+                    body: JSON.stringify(cleanTask)
+                });
+            } else {
+                await fetch(`${SUPABASE_URL}/rest/v1/tasks`, {
+                    method: 'POST',
+                    headers: {
+                        'apikey': SUPABASE_KEY,
+                        'Authorization': `Bearer ${SUPABASE_KEY}`,
+                        'Content-Type': 'application/json',
+                        'Prefer': 'return=representation'
+                    },
+                    body: JSON.stringify(cleanTask)
+                });
+            }
         }
 
         // Personnel
@@ -139,16 +187,38 @@ async function saveData() {
                 status: person.status
             };
             
-            await fetch(`${SUPABASE_URL}/rest/v1/personnel`, {
-                method: 'POST',
+            const existingPerson = await fetch(`${SUPABASE_URL}/rest/v1/personnel?name=eq.${encodeURIComponent(person.name)}&select=id`, {
                 headers: {
                     'apikey': SUPABASE_KEY,
-                    'Authorization': `Bearer ${SUPABASE_KEY}`,
-                    'Content-Type': 'application/json',
-                    'Prefer': 'return=representation'
-                },
-                body: JSON.stringify(cleanPerson)
+                    'Authorization': `Bearer ${SUPABASE_KEY}`
+                }
             });
+            const existingPersons = await existingPerson.json();
+            
+            if (existingPersons.length > 0) {
+                const personId = existingPersons[0].id;
+                await fetch(`${SUPABASE_URL}/rest/v1/personnel?id=eq.${personId}`, {
+                    method: 'PATCH',
+                    headers: {
+                        'apikey': SUPABASE_KEY,
+                        'Authorization': `Bearer ${SUPABASE_KEY}`,
+                        'Content-Type': 'application/json',
+                        'Prefer': 'return=representation'
+                    },
+                    body: JSON.stringify(cleanPerson)
+                });
+            } else {
+                await fetch(`${SUPABASE_URL}/rest/v1/personnel`, {
+                    method: 'POST',
+                    headers: {
+                        'apikey': SUPABASE_KEY,
+                        'Authorization': `Bearer ${SUPABASE_KEY}`,
+                        'Content-Type': 'application/json',
+                        'Prefer': 'return=representation'
+                    },
+                    body: JSON.stringify(cleanPerson)
+                });
+            }
         }
 
         // Materials
@@ -163,19 +233,41 @@ async function saveData() {
                 project_id: material.projectId
             };
             
-            await fetch(`${SUPABASE_URL}/rest/v1/materials`, {
-                method: 'POST',
+            const existingMaterial = await fetch(`${SUPABASE_URL}/rest/v1/materials?name=eq.${encodeURIComponent(material.name)}&select=id`, {
                 headers: {
                     'apikey': SUPABASE_KEY,
-                    'Authorization': `Bearer ${SUPABASE_KEY}`,
-                    'Content-Type': 'application/json',
-                    'Prefer': 'return=representation'
-                },
-                body: JSON.stringify(cleanMaterial)
+                    'Authorization': `Bearer ${SUPABASE_KEY}`
+                }
             });
+            const existingMaterials = await existingMaterial.json();
+            
+            if (existingMaterials.length > 0) {
+                const materialId = existingMaterials[0].id;
+                await fetch(`${SUPABASE_URL}/rest/v1/materials?id=eq.${materialId}`, {
+                    method: 'PATCH',
+                    headers: {
+                        'apikey': SUPABASE_KEY,
+                        'Authorization': `Bearer ${SUPABASE_KEY}`,
+                        'Content-Type': 'application/json',
+                        'Prefer': 'return=representation'
+                    },
+                    body: JSON.stringify(cleanMaterial)
+                });
+            } else {
+                await fetch(`${SUPABASE_URL}/rest/v1/materials`, {
+                    method: 'POST',
+                    headers: {
+                        'apikey': SUPABASE_KEY,
+                        'Authorization': `Bearer ${SUPABASE_KEY}`,
+                        'Content-Type': 'application/json',
+                        'Prefer': 'return=representation'
+                    },
+                    body: JSON.stringify(cleanMaterial)
+                });
+            }
         }
 
-        // Activity Log
+        // Activity Log (siempre agregar nuevos)
         for (const log of data.activityLog) {
             const cleanLog = {
                 message: log.message,

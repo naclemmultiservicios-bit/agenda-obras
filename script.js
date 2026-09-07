@@ -2,7 +2,7 @@
 const SUPABASE_URL = 'https://kgwknwfhnxmptjgpbjwy.supabase.co';
 const SUPABASE_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Imtnd2tud2ZobnhtcHRqZ3Biand5Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODg3OTA3MTYsImV4cCI6MjEwNDM2NjcxNn0.5_zOBdgQ4aVhZtNQUh_sYiFWCMiwzgWGvFmTXOWZHEU';
 
-// Data Management
+// Data Management - Supabase como única fuente de verdad
 let data = {
     projects: [],
     tasks: [],
@@ -11,58 +11,56 @@ let data = {
     activityLog: []
 };
 
-// Load data from Supabase
+// Variable para tracking de cambios locales
+let localChanges = {
+    projects: [],
+    tasks: [],
+    personnel: [],
+    materials: [],
+    activityLog: []
+};
+
+// Load data from Supabase (única fuente de verdad)
 async function loadData() {
     try {
-        // Cargar proyectos
-        const projectsResponse = await fetch(`${SUPABASE_URL}/rest/v1/projects`, {
-            headers: {
-                'apikey': SUPABASE_KEY,
-                'Authorization': `Bearer ${SUPABASE_KEY}`
-            }
-        });
+        // Cargar todos los datos de Supabase
+        const [projectsResponse, tasksResponse, personnelResponse, materialsResponse, activityLogResponse] = await Promise.all([
+            fetch(`${SUPABASE_URL}/rest/v1/projects?order=created_at`, {
+                headers: { 'apikey': SUPABASE_KEY, 'Authorization': `Bearer ${SUPABASE_KEY}` }
+            }),
+            fetch(`${SUPABASE_URL}/rest/v1/tasks?order=created_at`, {
+                headers: { 'apikey': SUPABASE_KEY, 'Authorization': `Bearer ${SUPABASE_KEY}` }
+            }),
+            fetch(`${SUPABASE_URL}/rest/v1/personnel?order=created_at`, {
+                headers: { 'apikey': SUPABASE_KEY, 'Authorization': `Bearer ${SUPABASE_KEY}` }
+            }),
+            fetch(`${SUPABASE_URL}/rest/v1/materials?order=created_at`, {
+                headers: { 'apikey': SUPABASE_KEY, 'Authorization': `Bearer ${SUPABASE_KEY}` }
+            }),
+            fetch(`${SUPABASE_URL}/rest/v1/activity_log?order=created_at`, {
+                headers: { 'apikey': SUPABASE_KEY, 'Authorization': `Bearer ${SUPABASE_KEY}` }
+            })
+        ]);
+
         data.projects = await projectsResponse.json();
-
-        // Cargar tareas
-        const tasksResponse = await fetch(`${SUPABASE_URL}/rest/v1/tasks`, {
-            headers: {
-                'apikey': SUPABASE_KEY,
-                'Authorization': `Bearer ${SUPABASE_KEY}`
-            }
-        });
         data.tasks = await tasksResponse.json();
-
-        // Cargar personal
-        const personnelResponse = await fetch(`${SUPABASE_URL}/rest/v1/personnel`, {
-            headers: {
-                'apikey': SUPABASE_KEY,
-                'Authorization': `Bearer ${SUPABASE_KEY}`
-            }
-        });
         data.personnel = await personnelResponse.json();
-
-        // Cargar materiales
-        const materialsResponse = await fetch(`${SUPABASE_URL}/rest/v1/materials`, {
-            headers: {
-                'apikey': SUPABASE_KEY,
-                'Authorization': `Bearer ${SUPABASE_KEY}`
-            }
-        });
         data.materials = await materialsResponse.json();
-
-        // Cargar activity log
-        const activityLogResponse = await fetch(`${SUPABASE_URL}/rest/v1/activity_log`, {
-            headers: {
-                'apikey': SUPABASE_KEY,
-                'Authorization': `Bearer ${SUPABASE_KEY}`
-            }
-        });
         data.activityLog = await activityLogResponse.json();
+
+        // Resetear cambios locales
+        localChanges = {
+            projects: [],
+            tasks: [],
+            personnel: [],
+            materials: [],
+            activityLog: []
+        };
 
         updateUI();
     } catch (error) {
         console.error('Error loading data from Supabase:', error);
-        // Fallback a localStorage si Supabase falla
+        // Si Supabase falla, usar datos locales como fallback
         const savedData = localStorage.getItem('constructionAgenda');
         if (savedData) {
             data = JSON.parse(savedData);
@@ -71,227 +69,158 @@ async function loadData() {
     }
 }
 
-// Save data to Supabase
-async function saveData() {
+// Save data - Solo localStorage local (sin sincronización automática para evitar duplicados)
+function saveData() {
+    localStorage.setItem('constructionAgenda', JSON.stringify(data));
+    updateUI();
+}
+
+// Función explícita para sincronizar con Supabase (evita duplicados)
+async function syncToSupabase() {
     try {
-        // Guardar en localStorage como backup
-        localStorage.setItem('constructionAgenda', JSON.stringify(data));
-        
-        // Guardar cada tipo de dato en Supabase (actualizar si existe, crear si no)
-        // Projects
+        alert('Sincronizando con Supabase...');
+
+        // Obtener datos actuales de Supabase
+        const [supabaseProjects, supabaseTasks, supabasePersonnel, supabaseMaterials, supabaseActivityLog] = await Promise.all([
+            fetch(`${SUPABASE_URL}/rest/v1/projects?select=id,name`, {
+                headers: { 'apikey': SUPABASE_KEY, 'Authorization': `Bearer ${SUPABASE_KEY}` }
+            }).then(r => r.json()),
+            fetch(`${SUPABASE_URL}/rest/v1/tasks?select=id,title`, {
+                headers: { 'apikey': SUPABASE_KEY, 'Authorization': `Bearer ${SUPABASE_KEY}` }
+            }).then(r => r.json()),
+            fetch(`${SUPABASE_URL}/rest/v1/personnel?select=id,name`, {
+                headers: { 'apikey': SUPABASE_KEY, 'Authorization': `Bearer ${SUPABASE_KEY}` }
+            }).then(r => r.json()),
+            fetch(`${SUPABASE_URL}/rest/v1/materials?select=id,name`, {
+                headers: { 'apikey': SUPABASE_KEY, 'Authorization': `Bearer ${SUPABASE_KEY}` }
+            }).then(r => r.json()),
+            fetch(`${SUPABASE_URL}/rest/v1/activity_log?select=id,message,timestamp`, {
+                headers: { 'apikey': SUPABASE_KEY, 'Authorization': `Bearer ${SUPABASE_KEY}` }
+            }).then(r => r.json())
+        ]);
+
+        // Enviar solo datos que no existen en Supabase
         for (const project of data.projects) {
-            const cleanProject = {
-                name: project.name,
-                client: project.client,
-                location: project.location,
-                start_date: project.startDate,
-                end_date: project.endDate,
-                budget: project.budget,
-                status: project.status,
-                description: project.description
-            };
-            
-            // Intentar actualizar primero (si existe proyecto con mismo nombre)
-            const existingProject = await fetch(`${SUPABASE_URL}/rest/v1/projects?name=eq.${encodeURIComponent(project.name)}&select=id`, {
-                headers: {
-                    'apikey': SUPABASE_KEY,
-                    'Authorization': `Bearer ${SUPABASE_KEY}`
-                }
-            });
-            const existingProjects = await existingProject.json();
-            
-            if (existingProjects.length > 0) {
-                // Actualizar proyecto existente
-                const projectId = existingProjects[0].id;
-                await fetch(`${SUPABASE_URL}/rest/v1/projects?id=eq.${projectId}`, {
-                    method: 'PATCH',
-                    headers: {
-                        'apikey': SUPABASE_KEY,
-                        'Authorization': `Bearer ${SUPABASE_KEY}`,
-                        'Content-Type': 'application/json',
-                        'Prefer': 'return=representation'
-                    },
-                    body: JSON.stringify(cleanProject)
-                });
-            } else {
-                // Crear nuevo proyecto
+            const exists = supabaseProjects.some(p => p.name === project.name);
+            if (!exists) {
+                const cleanProject = {
+                    name: project.name,
+                    client: project.client,
+                    location: project.location,
+                    start_date: project.startDate,
+                    end_date: project.endDate,
+                    budget: project.budget,
+                    status: project.status,
+                    description: project.description
+                };
                 await fetch(`${SUPABASE_URL}/rest/v1/projects`, {
                     method: 'POST',
                     headers: {
                         'apikey': SUPABASE_KEY,
                         'Authorization': `Bearer ${SUPABASE_KEY}`,
-                        'Content-Type': 'application/json',
-                        'Prefer': 'return=representation'
+                        'Content-Type': 'application/json'
                     },
                     body: JSON.stringify(cleanProject)
                 });
             }
         }
 
-        // Tasks
         for (const task of data.tasks) {
-            const cleanTask = {
-                title: task.title,
-                project_id: task.projectId,
-                assignee_id: task.assigneeId,
-                priority: task.priority,
-                deadline: task.deadline,
-                status: task.status,
-                description: task.description
-            };
-            
-            // Verificar si existe tarea con mismo título
-            const existingTask = await fetch(`${SUPABASE_URL}/rest/v1/tasks?title=eq.${encodeURIComponent(task.title)}&select=id`, {
-                headers: {
-                    'apikey': SUPABASE_KEY,
-                    'Authorization': `Bearer ${SUPABASE_KEY}`
-                }
-            });
-            const existingTasks = await existingTask.json();
-            
-            if (existingTasks.length > 0) {
-                const taskId = existingTasks[0].id;
-                await fetch(`${SUPABASE_URL}/rest/v1/tasks?id=eq.${taskId}`, {
-                    method: 'PATCH',
-                    headers: {
-                        'apikey': SUPABASE_KEY,
-                        'Authorization': `Bearer ${SUPABASE_KEY}`,
-                        'Content-Type': 'application/json',
-                        'Prefer': 'return=representation'
-                    },
-                    body: JSON.stringify(cleanTask)
-                });
-            } else {
+            const exists = supabaseTasks.some(t => t.title === task.title);
+            if (!exists) {
+                const cleanTask = {
+                    title: task.title,
+                    project_id: task.projectId,
+                    assignee_id: task.assigneeId,
+                    priority: task.priority,
+                    deadline: task.deadline,
+                    status: task.status,
+                    description: task.description
+                };
                 await fetch(`${SUPABASE_URL}/rest/v1/tasks`, {
                     method: 'POST',
                     headers: {
                         'apikey': SUPABASE_KEY,
                         'Authorization': `Bearer ${SUPABASE_KEY}`,
-                        'Content-Type': 'application/json',
-                        'Prefer': 'return=representation'
+                        'Content-Type': 'application/json'
                     },
                     body: JSON.stringify(cleanTask)
                 });
             }
         }
 
-        // Personnel
         for (const person of data.personnel) {
-            const cleanPerson = {
-                name: person.name,
-                role: person.role,
-                phone: person.phone,
-                email: person.email,
-                specialty: person.specialty,
-                salary: person.salary,
-                status: person.status
-            };
-            
-            const existingPerson = await fetch(`${SUPABASE_URL}/rest/v1/personnel?name=eq.${encodeURIComponent(person.name)}&select=id`, {
-                headers: {
-                    'apikey': SUPABASE_KEY,
-                    'Authorization': `Bearer ${SUPABASE_KEY}`
-                }
-            });
-            const existingPersons = await existingPerson.json();
-            
-            if (existingPersons.length > 0) {
-                const personId = existingPersons[0].id;
-                await fetch(`${SUPABASE_URL}/rest/v1/personnel?id=eq.${personId}`, {
-                    method: 'PATCH',
-                    headers: {
-                        'apikey': SUPABASE_KEY,
-                        'Authorization': `Bearer ${SUPABASE_KEY}`,
-                        'Content-Type': 'application/json',
-                        'Prefer': 'return=representation'
-                    },
-                    body: JSON.stringify(cleanPerson)
-                });
-            } else {
+            const exists = supabasePersonnel.some(p => p.name === person.name);
+            if (!exists) {
+                const cleanPerson = {
+                    name: person.name,
+                    role: person.role,
+                    phone: person.phone,
+                    email: person.email,
+                    specialty: person.specialty,
+                    salary: person.salary,
+                    status: person.status
+                };
                 await fetch(`${SUPABASE_URL}/rest/v1/personnel`, {
                     method: 'POST',
                     headers: {
                         'apikey': SUPABASE_KEY,
                         'Authorization': `Bearer ${SUPABASE_KEY}`,
-                        'Content-Type': 'application/json',
-                        'Prefer': 'return=representation'
+                        'Content-Type': 'application/json'
                     },
                     body: JSON.stringify(cleanPerson)
                 });
             }
         }
 
-        // Materials
         for (const material of data.materials) {
-            const cleanMaterial = {
-                name: material.name,
-                category: material.category,
-                quantity: material.quantity,
-                unit: material.unit,
-                price: material.price,
-                supplier: material.supplier,
-                project_id: material.projectId
-            };
-            
-            const existingMaterial = await fetch(`${SUPABASE_URL}/rest/v1/materials?name=eq.${encodeURIComponent(material.name)}&select=id`, {
-                headers: {
-                    'apikey': SUPABASE_KEY,
-                    'Authorization': `Bearer ${SUPABASE_KEY}`
-                }
-            });
-            const existingMaterials = await existingMaterial.json();
-            
-            if (existingMaterials.length > 0) {
-                const materialId = existingMaterials[0].id;
-                await fetch(`${SUPABASE_URL}/rest/v1/materials?id=eq.${materialId}`, {
-                    method: 'PATCH',
-                    headers: {
-                        'apikey': SUPABASE_KEY,
-                        'Authorization': `Bearer ${SUPABASE_KEY}`,
-                        'Content-Type': 'application/json',
-                        'Prefer': 'return=representation'
-                    },
-                    body: JSON.stringify(cleanMaterial)
-                });
-            } else {
+            const exists = supabaseMaterials.some(m => m.name === material.name);
+            if (!exists) {
+                const cleanMaterial = {
+                    name: material.name,
+                    category: material.category,
+                    quantity: material.quantity,
+                    unit: material.unit,
+                    price: material.price,
+                    supplier: material.supplier,
+                    project_id: material.projectId
+                };
                 await fetch(`${SUPABASE_URL}/rest/v1/materials`, {
                     method: 'POST',
                     headers: {
                         'apikey': SUPABASE_KEY,
                         'Authorization': `Bearer ${SUPABASE_KEY}`,
-                        'Content-Type': 'application/json',
-                        'Prefer': 'return=representation'
+                        'Content-Type': 'application/json'
                     },
                     body: JSON.stringify(cleanMaterial)
                 });
             }
         }
 
-        // Activity Log (siempre agregar nuevos)
         for (const log of data.activityLog) {
-            const cleanLog = {
-                message: log.message,
-                timestamp: log.timestamp
-            };
-            
-            await fetch(`${SUPABASE_URL}/rest/v1/activity_log`, {
-                method: 'POST',
-                headers: {
-                    'apikey': SUPABASE_KEY,
-                    'Authorization': `Bearer ${SUPABASE_KEY}`,
-                    'Content-Type': 'application/json',
-                    'Prefer': 'return=representation'
-                },
-                body: JSON.stringify(cleanLog)
-            });
+            const exists = supabaseActivityLog.some(l => l.message === log.message && l.timestamp === log.timestamp);
+            if (!exists) {
+                const cleanLog = {
+                    message: log.message,
+                    timestamp: log.timestamp
+                };
+                await fetch(`${SUPABASE_URL}/rest/v1/activity_log`, {
+                    method: 'POST',
+                    headers: {
+                        'apikey': SUPABASE_KEY,
+                        'Authorization': `Bearer ${SUPABASE_KEY}`,
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify(cleanLog)
+                });
+            }
         }
 
-        updateUI();
+        alert('✓ Sincronización completada');
+        await loadData();
     } catch (error) {
-        console.error('Error saving data to Supabase:', error);
-        // Fallback a localStorage si Supabase falla
-        localStorage.setItem('constructionAgenda', JSON.stringify(data));
-        updateUI();
+        console.error('Error syncing to Supabase:', error);
+        alert('Error al sincronizar: ' + error.message);
     }
 }
 

@@ -618,6 +618,13 @@ function updateDashboard() {
         data.personnel.filter(p => p.status === 'active').length;
     document.getElementById('total-materials').textContent = data.materials.length;
 
+    // Calcular presupuesto total
+    const totalBudget = data.projects.reduce((sum, project) => {
+        const budget = parseFloat(project.budget) || 0;
+        return sum + budget;
+    }, 0);
+    document.getElementById('total-budget').textContent = `$${totalBudget.toLocaleString()}`;
+
     // Update activity log
     const activityList = document.getElementById('recent-activity-list');
     if (data.activityLog.length > 0) {

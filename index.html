@@ -19,9 +19,13 @@
         <div class="modal-content login-content">
             <div class="login-header">
                 <h2>🔐 Acceso a Agenda de Obras</h2>
-                <p>Ingresa la contraseña para acceder</p>
+                <p>Ingresa tu usuario y contraseña</p>
             </div>
             <form id="login-form" onsubmit="handleLogin(event)">
+                <div class="form-group">
+                    <label for="login-username">Usuario:</label>
+                    <input type="text" id="login-username" required placeholder="Ingresa tu usuario">
+                </div>
                 <div class="form-group">
                     <label for="login-password">Contraseña:</label>
                     <input type="password" id="login-password" required placeholder="Ingresa tu contraseña">
@@ -36,7 +40,11 @@
         <header>
             <h1>🏗️ Agenda Profesional de Obras</h1>
             <p class="subtitle">Sistema de gestión integral para proyectos de construcción</p>
-            <button class="btn btn-secondary logout-btn" onclick="logout()">🔒 Cerrar Sesión</button>
+            <div class="header-actions">
+                <span id="user-info" class="user-info"></span>
+                <button class="btn btn-secondary admin-btn" id="admin-users-btn" onclick="showUsersAdmin()" style="display: none;">👥 Usuarios</button>
+                <button class="btn btn-secondary logout-btn" onclick="logout()">🔒 Cerrar Sesión</button>
+            </div>
         </header>
 
         <nav class="main-nav">
@@ -388,6 +396,49 @@
                 </div>
                 <button type="submit" class="btn btn-primary">Guardar Personal</button>
             </form>
+        </div>
+    </div>
+
+    <!-- Users Admin Modal -->
+    <div id="users-modal" class="modal">
+        <div class="modal-content">
+            <span class="close" onclick="closeModal('users-modal')">&times;</span>
+            <h2>👥 Gestión de Usuarios</h2>
+            <div class="modal-body">
+                <div class="users-header">
+                    <h3>Crear Nuevo Usuario</h3>
+                    <form id="create-user-form" onsubmit="createUser(event)">
+                        <div class="form-group">
+                            <label for="new-username">Usuario:</label>
+                            <input type="text" id="new-username" required placeholder="Nombre de usuario">
+                        </div>
+                        <div class="form-group">
+                            <label for="new-email">Email:</label>
+                            <input type="email" id="new-email" required placeholder="Email del usuario">
+                        </div>
+                        <div class="form-group">
+                            <label for="new-password">Contraseña:</label>
+                            <input type="password" id="new-password" required placeholder="Contraseña">
+                        </div>
+                        <div class="form-group">
+                            <label for="new-fullname">Nombre Completo:</label>
+                            <input type="text" id="new-fullname" required placeholder="Nombre completo">
+                        </div>
+                        <div class="form-group">
+                            <label for="new-role">Rol:</label>
+                            <select id="new-role" required>
+                                <option value="user">Usuario</option>
+                                <option value="admin">Administrador</option>
+                            </select>
+                        </div>
+                        <button type="submit" class="btn btn-primary">Crear Usuario</button>
+                    </form>
+                </div>
+                <div class="users-list">
+                    <h3>Usuarios Existentes</h3>
+                    <div id="users-list-container"></div>
+                </div>
+            </div>
         </div>
     </div>
 

@@ -2,13 +2,14 @@
 const SUPABASE_URL = 'https://kgwknwfhnxmptjgpbjwy.supabase.co';
 const SUPABASE_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Imtnd2tud2ZobnhtcHRqZ3Biand5Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODg3OTA3MTYsImV4cCI6MjEwNDM2NjcxNn0.5_zOBdgQ4aVhZtNQUh_sYiFWCMiwzgWGvFmTXOWZHEU';
 
-// App Password (Configuración simple)
-const APP_PASSWORD = 'naclem2024';
+// User Management
+let currentUser = null;
 
 // Authentication Functions
-function checkAuth() {
-    const isAuthenticated = localStorage.getItem('agenda_authenticated');
-    if (isAuthenticated === 'true') {
+async function checkAuth() {
+    const savedUser = localStorage.getItem('agenda_user');
+    if (savedUser) {
+        currentUser = JSON.parse(savedUser);
         showMainApp();
     } else {
         showLoginModal();
@@ -23,28 +24,216 @@ function showLoginModal() {
 function showMainApp() {
     document.getElementById('login-modal').style.display = 'none';
     document.getElementById('main-app').style.display = 'block';
+    updateUserInfo();
     loadData(); // Cargar datos después de autenticarse
 }
 
-function handleLogin(event) {
+async function handleLogin(event) {
     event.preventDefault();
+    const username = document.getElementById('login-username').value;
     const password = document.getElementById('login-password').value;
     const errorElement = document.getElementById('login-error');
     
-    if (password === APP_PASSWORD) {
-        localStorage.setItem('agenda_authenticated', 'true');
-        showMainApp();
-        errorElement.style.display = 'none';
-        document.getElementById('login-password').value = '';
-    } else {
-        errorElement.textContent = 'Contraseña incorrecta';
+    try {
+        // Verificar usuario en Supabase
+        const response = await fetch(`${SUPABASE_URL}/rest/v1/users?username=eq.${username}&is_active=eq.true`, {
+            headers: {
+                'apikey': SUPABASE_KEY,
+                'Authorization': `Bearer ${SUPABASE_KEY}`
+            }
+        });
+        
+        const users = await response.json();
+        
+        if (users.length === 0) {
+            errorElement.textContent = 'Usuario no encontrado o inactivo';
+            errorElement.style.display = 'block';
+            return;
+        }
+        
+        const user = users[0];
+        
+        if (user.password === password) {
+            currentUser = user;
+            localStorage.setItem('agenda_user', JSON.stringify(user));
+            showMainApp();
+            errorElement.style.display = 'none';
+            document.getElementById('login-username').value = '';
+            document.getElementById('login-password').value = '';
+        } else {
+            errorElement.textContent = 'Contraseña incorrecta';
+            errorElement.style.display = 'block';
+        }
+    } catch (error) {
+        console.error('Error en login:', error);
+        errorElement.textContent = 'Error de conexión';
         errorElement.style.display = 'block';
     }
 }
 
 function logout() {
-    localStorage.removeItem('agenda_authenticated');
+    currentUser = null;
+    localStorage.removeItem('agenda_user');
     showLoginModal();
+}
+
+function updateUserInfo() {
+    if (currentUser) {
+        const userInfo = document.getElementById('user-info');
+        if (userInfo) {
+            userInfo.textContent = `👤 ${currentUser.full_name || currentUser.username}`;
+        }
+        
+        // Mostrar/ocultar botón de admin según rol
+        const adminBtn = document.getElementById('admin-users-btn');
+        if (adminBtn) {
+            adminBtn.style.display = currentUser.role === 'admin' ? 'block' : 'none';
+        }
+    }
+}
+
+// Users Management Functions
+async function showUsersAdmin() {
+    if (currentUser.role !== 'admin') {
+        alert('Solo administradores pueden gestionar usuarios');
+        return;
+    }
+    
+    openModal('users-modal');
+    await loadUsersList();
+}
+
+async function loadUsersList() {
+    try {
+        const response = await fetch(`${SUPABASE_URL}/rest/v1/users?order=created_at`, {
+            headers: {
+                'apikey': SUPABASE_KEY,
+                'Authorization': `Bearer ${SUPABASE_KEY}`
+            }
+        });
+        
+        const users = await response.json();
+        const container = document.getElementById('users-list-container');
+        
+        if (users.length === 0) {
+            container.innerHTML = '<p class="no-data">No hay usuarios registrados</p>';
+            return;
+        }
+        
+        container.innerHTML = users.map(user => `
+            <div class="user-item ${user.is_active ? 'active' : 'inactive'}">
+                <div class="user-info">
+                    <strong>${user.full_name || user.username}</strong>
+                    <small>(${user.username})</small>
+                    <br>
+                    <small>${user.email}</small>
+                    <span class="user-role">${user.role === 'admin' ? '👑 Admin' : '👤 Usuario'}</span>
+                </div>
+                <div class="user-actions">
+                    ${user.username !== 'admin' ? `
+                        <button class="btn btn-sm ${user.is_active ? 'btn-warning' : 'btn-success'}" 
+                                onclick="toggleUserStatus(${user.id}, ${!user.is_active})">
+                            ${user.is_active ? '🔒 Desactivar' : '✅ Activar'}
+                        </button>
+                        <button class="btn btn-sm btn-danger" onclick="deleteUser(${user.id})">
+                            🗑️ Eliminar
+                        </button>
+                    ` : '<span class="admin-badge">👑 Admin Principal</span>'}
+                </div>
+            </div>
+        `).join('');
+    } catch (error) {
+        console.error('Error cargando usuarios:', error);
+        alert('Error al cargar usuarios');
+    }
+}
+
+async function createUser(event) {
+    event.preventDefault();
+    
+    const username = document.getElementById('new-username').value;
+    const email = document.getElementById('new-email').value;
+    const password = document.getElementById('new-password').value;
+    const fullName = document.getElementById('new-fullname').value;
+    const role = document.getElementById('new-role').value;
+    
+    try {
+        const response = await fetch(`${SUPABASE_URL}/rest/v1/users`, {
+            method: 'POST',
+            headers: {
+                'apikey': SUPABASE_KEY,
+                'Authorization': `Bearer ${SUPABASE_KEY}`,
+                'Content-Type': 'application/json'
+            },
+            body: JSON.stringify({
+                username: username,
+                email: email,
+                password: password,
+                full_name: fullName,
+                role: role,
+                is_active: true
+            })
+        });
+        
+        if (response.ok) {
+            alert('Usuario creado exitosamente');
+            document.getElementById('create-user-form').reset();
+            await loadUsersList();
+        } else {
+            alert('Error al crear usuario. El usuario o email ya existe.');
+        }
+    } catch (error) {
+        console.error('Error creando usuario:', error);
+        alert('Error al crear usuario');
+    }
+}
+
+async function toggleUserStatus(userId, isActive) {
+    try {
+        const response = await fetch(`${SUPABASE_URL}/rest/v1/users?id=eq.${userId}`, {
+            method: 'PATCH',
+            headers: {
+                'apikey': SUPABASE_KEY,
+                'Authorization': `Bearer ${SUPABASE_KEY}`,
+                'Content-Type': 'application/json'
+            },
+            body: JSON.stringify({ is_active: isActive })
+        });
+        
+        if (response.ok) {
+            await loadUsersList();
+        } else {
+            alert('Error al cambiar estado del usuario');
+        }
+    } catch (error) {
+        console.error('Error cambiando estado:', error);
+        alert('Error al cambiar estado del usuario');
+    }
+}
+
+async function deleteUser(userId) {
+    if (!confirm('¿Estás seguro de eliminar este usuario?')) {
+        return;
+    }
+    
+    try {
+        const response = await fetch(`${SUPABASE_URL}/rest/v1/users?id=eq.${userId}`, {
+            method: 'DELETE',
+            headers: {
+                'apikey': SUPABASE_KEY,
+                'Authorization': `Bearer ${SUPABASE_KEY}`
+            }
+        });
+        
+        if (response.ok) {
+            await loadUsersList();
+        } else {
+            alert('Error al eliminar usuario');
+        }
+    } catch (error) {
+        console.error('Error eliminando usuario:', error);
+        alert('Error al eliminar usuario');
+    }
 }
 
 // Data Management - Supabase como única fuente de verdad

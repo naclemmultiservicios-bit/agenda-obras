@@ -29,10 +29,23 @@ header {
     position: relative;
 }
 
-.logout-btn {
+.header-actions {
     position: absolute;
     top: 20px;
     right: 20px;
+    display: flex;
+    gap: 10px;
+    align-items: center;
+}
+
+.user-info {
+    background: rgba(255, 255, 255, 0.2);
+    padding: 8px 15px;
+    border-radius: 5px;
+    font-size: 14px;
+}
+
+.logout-btn, .admin-btn {
     background: rgba(255, 255, 255, 0.2);
     border: 1px solid rgba(255, 255, 255, 0.3);
     color: white;
@@ -42,7 +55,7 @@ header {
     font-size: 14px;
 }
 
-.logout-btn:hover {
+.logout-btn:hover, .admin-btn:hover {
     background: rgba(255, 255, 255, 0.3);
 }
 
@@ -526,6 +539,77 @@ main {
 
 .btn-full {
     width: 100%;
+}
+
+/* Users Management Styles */
+.users-header {
+    margin-bottom: 30px;
+    padding-bottom: 20px;
+    border-bottom: 1px solid #eee;
+}
+
+.users-list {
+    margin-top: 30px;
+}
+
+.user-item {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 15px;
+    margin-bottom: 10px;
+    border-radius: 8px;
+    background: #f8f9fa;
+    border-left: 4px solid #ccc;
+}
+
+.user-item.active {
+    border-left-color: #4CAF50;
+}
+
+.user-item.inactive {
+    border-left-color: #ff6b6b;
+    opacity: 0.7;
+}
+
+.user-info {
+    flex: 1;
+}
+
+.user-info strong {
+    display: block;
+    margin-bottom: 5px;
+}
+
+.user-info small {
+    color: #666;
+    font-size: 12px;
+}
+
+.user-role {
+    display: inline-block;
+    background: #667eea;
+    color: white;
+    padding: 2px 8px;
+    border-radius: 12px;
+    font-size: 11px;
+    margin-left: 10px;
+}
+
+.user-actions {
+    display: flex;
+    gap: 5px;
+}
+
+.btn-sm {
+    padding: 5px 10px;
+    font-size: 12px;
+}
+
+.admin-badge {
+    color: #667eea;
+    font-weight: bold;
+    font-size: 12px;
 }
 
 .modal-content {

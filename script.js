@@ -2,6 +2,51 @@
 const SUPABASE_URL = 'https://kgwknwfhnxmptjgpbjwy.supabase.co';
 const SUPABASE_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Imtnd2tud2ZobnhtcHRqZ3Biand5Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODg3OTA3MTYsImV4cCI6MjEwNDM2NjcxNn0.5_zOBdgQ4aVhZtNQUh_sYiFWCMiwzgWGvFmTXOWZHEU';
 
+// App Password (Configuración simple)
+const APP_PASSWORD = 'naclem2024';
+
+// Authentication Functions
+function checkAuth() {
+    const isAuthenticated = localStorage.getItem('agenda_authenticated');
+    if (isAuthenticated === 'true') {
+        showMainApp();
+    } else {
+        showLoginModal();
+    }
+}
+
+function showLoginModal() {
+    document.getElementById('login-modal').style.display = 'flex';
+    document.getElementById('main-app').style.display = 'none';
+}
+
+function showMainApp() {
+    document.getElementById('login-modal').style.display = 'none';
+    document.getElementById('main-app').style.display = 'block';
+    loadData(); // Cargar datos después de autenticarse
+}
+
+function handleLogin(event) {
+    event.preventDefault();
+    const password = document.getElementById('login-password').value;
+    const errorElement = document.getElementById('login-error');
+    
+    if (password === APP_PASSWORD) {
+        localStorage.setItem('agenda_authenticated', 'true');
+        showMainApp();
+        errorElement.style.display = 'none';
+        document.getElementById('login-password').value = '';
+    } else {
+        errorElement.textContent = 'Contraseña incorrecta';
+        errorElement.style.display = 'block';
+    }
+}
+
+function logout() {
+    localStorage.removeItem('agenda_authenticated');
+    showLoginModal();
+}
+
 // Data Management - Supabase como única fuente de verdad
 let data = {
     projects: [],
@@ -1309,4 +1354,4 @@ function printQR() {
 }
 
 // Initialize
-loadData();
+checkAuth();

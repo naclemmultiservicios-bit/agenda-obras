@@ -14,10 +14,29 @@
     <link rel="apple-touch-icon" href="icon-192.png">
 </head>
 <body>
-    <div class="container">
+    <!-- Login Modal -->
+    <div id="login-modal" class="modal login-modal">
+        <div class="modal-content login-content">
+            <div class="login-header">
+                <h2>🔐 Acceso a Agenda de Obras</h2>
+                <p>Ingresa la contraseña para acceder</p>
+            </div>
+            <form id="login-form" onsubmit="handleLogin(event)">
+                <div class="form-group">
+                    <label for="login-password">Contraseña:</label>
+                    <input type="password" id="login-password" required placeholder="Ingresa tu contraseña">
+                </div>
+                <button type="submit" class="btn btn-primary btn-full">Acceder</button>
+            </form>
+            <p class="login-error" id="login-error" style="display: none; color: red; margin-top: 10px;"></p>
+        </div>
+    </div>
+
+    <div class="container" id="main-app" style="display: none;">
         <header>
             <h1>🏗️ Agenda Profesional de Obras</h1>
             <p class="subtitle">Sistema de gestión integral para proyectos de construcción</p>
+            <button class="btn btn-secondary logout-btn" onclick="logout()">🔒 Cerrar Sesión</button>
         </header>
 
         <nav class="main-nav">
@@ -471,5 +490,6 @@
             document.body.appendChild(installBtn);
         });
     </script>
+    </div>
 </body>
 </html>

@@ -26,6 +26,24 @@ header {
     color: white;
     padding: 30px;
     text-align: center;
+    position: relative;
+}
+
+.logout-btn {
+    position: absolute;
+    top: 20px;
+    right: 20px;
+    background: rgba(255, 255, 255, 0.2);
+    border: 1px solid rgba(255, 255, 255, 0.3);
+    color: white;
+    padding: 8px 15px;
+    border-radius: 5px;
+    cursor: pointer;
+    font-size: 14px;
+}
+
+.logout-btn:hover {
+    background: rgba(255, 255, 255, 0.3);
 }
 
 header h1 {
@@ -478,6 +496,36 @@ main {
     height: 100%;
     background-color: rgba(0, 0, 0, 0.5);
     animation: fadeIn 0.3s ease;
+}
+
+/* Login Modal específico */
+.login-modal {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+.login-content {
+    max-width: 400px;
+    text-align: center;
+}
+
+.login-header {
+    margin-bottom: 20px;
+}
+
+.login-header h2 {
+    margin-bottom: 10px;
+    color: #667eea;
+}
+
+.login-header p {
+    color: #666;
+    font-size: 14px;
+}
+
+.btn-full {
+    width: 100%;
 }
 
 .modal-content {

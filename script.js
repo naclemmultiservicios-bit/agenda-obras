@@ -82,8 +82,29 @@ async function handleLogin(event) {
         }
     } catch (error) {
         console.error('Error en login:', error);
-        errorElement.textContent = 'Error de conexión: ' + error.message;
-        errorElement.style.display = 'block';
+        
+        // Fallback: Usar usuario hardcoded si Supabase falla
+        console.log('Usando fallback local...');
+        
+        // Usuarios hardcoded como emergencia
+        const fallbackUsers = [
+            { username: 'admin', password: 'admin123', full_name: 'Administrador', role: 'admin', is_active: true }
+        ];
+        
+        const fallbackUser = fallbackUsers.find(u => u.username === username && u.password === password);
+        
+        if (fallbackUser) {
+            currentUser = fallbackUser;
+            localStorage.setItem('agenda_user', JSON.stringify(fallbackUser));
+            showMainApp();
+            errorElement.style.display = 'none';
+            document.getElementById('login-username').value = '';
+            document.getElementById('login-password').value = '';
+            console.log('Login exitoso con fallback');
+        } else {
+            errorElement.textContent = 'Error de conexión y usuario no encontrado. Contacta al administrador.';
+            errorElement.style.display = 'block';
+        }
     }
 }
 

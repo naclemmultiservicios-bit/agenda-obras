@@ -34,16 +34,31 @@ async function handleLogin(event) {
     const password = document.getElementById('login-password').value;
     const errorElement = document.getElementById('login-error');
     
+    // Limpiar errores anteriores
+    errorElement.style.display = 'none';
+    errorElement.textContent = '';
+    
     try {
+        console.log('Intentando conectar a Supabase...');
+        console.log('URL:', SUPABASE_URL);
+        
         // Verificar usuario en Supabase
-        const response = await fetch(`${SUPABASE_URL}/rest/v1/users?username=eq.${username}&is_active=eq.true`, {
+        const response = await fetch(`${SUPABASE_URL}/rest/v1/users?username=eq.${encodeURIComponent(username)}&is_active=eq.true`, {
             headers: {
                 'apikey': SUPABASE_KEY,
-                'Authorization': `Bearer ${SUPABASE_KEY}`
+                'Authorization': `Bearer ${SUPABASE_KEY}`,
+                'Content-Type': 'application/json'
             }
         });
         
+        console.log('Respuesta status:', response.status);
+        
+        if (!response.ok) {
+            throw new Error(`Error HTTP: ${response.status}`);
+        }
+        
         const users = await response.json();
+        console.log('Usuarios encontrados:', users.length);
         
         if (users.length === 0) {
             errorElement.textContent = 'Usuario no encontrado o inactivo';
@@ -52,6 +67,7 @@ async function handleLogin(event) {
         }
         
         const user = users[0];
+        console.log('Usuario encontrado:', user.username);
         
         if (user.password === password) {
             currentUser = user;
@@ -66,7 +82,7 @@ async function handleLogin(event) {
         }
     } catch (error) {
         console.error('Error en login:', error);
-        errorElement.textContent = 'Error de conexión';
+        errorElement.textContent = 'Error de conexión: ' + error.message;
         errorElement.style.display = 'block';
     }
 }
